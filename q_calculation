@@ -1,0 +1,20 @@
+qcalculation <- function(SNPdata){
+  MAFs <- c() #minor alleles frequencies
+  chromosomes <- c()
+  N_col = ncol(SNPdata)
+  
+  for(i in (1:nrow(SNPdata))){
+  
+    row <- SNPdata[i, ]
+    
+    chromosomes <- c(chromosomes, row.names(row)) #obtain the name of chromosome
+    numbers_of_aa <- length(row[row==2])
+    numbers_of_Aa <- length(row[row==1])
+    numbers_of_AA <- length(row[row==0])
+    
+    q = (numbers_of_aa*2 + numbers_of_Aa)/(N_col*2)
+    MAFs <- c(MAFs, q)
+  }
+  final_vector <- setNames(MAFs, chromosomes)
+  return(final_vector)
+}
