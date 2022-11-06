@@ -1,0 +1,26 @@
+HWEtest <- function(SNPdata){
+  
+  n = ncol(SNPdata)
+  MAFs <- qcalculation(SNPdata)
+  p_values <- c()
+  chisquares <- c()
+  for(i in(1:length(MAFs))){
+    row <- SNPdata[i, ]
+    n_aa <- length(row[row==2]) #count the number of aa for the respective row 
+    n_AA <- length(row[row==0])
+    n_Aa <- length(row[row==1])
+    
+    if(MAFs[i]<0.5){ #tipical situation where "a" is the minor allele 
+      q = MAFs[i]
+      p = 1 -q
+      chisquare = ((n_aa - n*q^2)^2/(n*q^2) + (n_AA - n*p^2)^2/(n*p^2) + (n_Aa - n*2*p*q)^2/(n*2*p*q))
+    }else{ # MAF>0.5 so "A" is the minor allele
+      p = MAFs[i]
+      q = 1 - p
+      chisquare = ((n_AA - n*q^2)^2/(n*q^2) + (n_aa - n*p^2)^2/(n*p^2) +  + (n_Aa - n*2*p*q)^2/(n*2*p*q)) #note the differences respect to the chisquare that is calculated if the first condition is satisfied (if q<0.5)
+    }
+    chisquares <- c(chisquares, chisquare)
+    p_values <- c(p_values, 1-pchisq(chisquare, df=1 ))
+  }
+  return(p_values)
+}
