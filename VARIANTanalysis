@@ -1,0 +1,90 @@
+VARIANTanalysis <- function(filepath, indCTRL, MAFth=0.01, HWEalpha=0.01){
+  data <- read.table(filepath)
+  cases <- data[,-indCTRL]
+  controls <- data[,indCTRL]
+  chromosomes <- c()
+  final_matrix <- matrix(ncol = 7)
+  X_values <- c()
+  p_values <- c()
+  q_values <- c()
+  G <- ncol(data) #number of tests
+  
+  q_s <- qcalculation(controls) #recall the q_calculation function
+  HWE_p_values <- HWEtest(controls) #recall HWEtest functions
+  
+  for (i in(1:length(q_s))){ #here we iterate all over the chromosomes
+    #eliminate chromosomes that doesn't respect specific treshold
+    if(q_s[i] < MAFth | HWE_p_values[i] < HWEalpha){
+      data <- data[-i, ]
+    }
+  }
+  for (j in 1:nrow(data)) {
+    row_case <- data[j, -indCTRL]
+    row_control <- data[j, indCTRL]
+    chromosomes <- c(chromosomes, row.names(row_case)) #here i obtain a vector with the chromosomes names
+    
+    #obtain the frequencies for cases and controls
+    n_aa_cases <- length(row_case[row_case==2])
+    n_Aa_cases <- length(row_case[row_case==1])
+    n_AA_cases <- length(row_case[row_case==0])
+    
+    n_aa_control <- length(row_control[row_control==2])
+    n_Aa_control <- length(row_control[row_control==1])
+    n_AA_control <- length(row_control[row_control==0])
+    
+    #build the matrix of the observed data
+    M <- matrix(c(n_AA_cases,n_AA_control, n_Aa_cases, 
+                  n_Aa_control, n_aa_cases, n_aa_control), nrow = 2)
+    
+    #compute the expected frequencies for case and controls
+    n_aa_cases_exp <- (sum(M[,3])/ncol(data))*sum(M[1,])
+    n_Aa_cases_exp <- (sum(M[,2])/ncol(data))*sum(M[1,])
+    n_AA_cases_exp <- (sum(M[,1])/ncol(data))*sum(M[1,])
+    
+    n_aa_control_exp <- (sum(M[,3])/ncol(data))*sum(M[2,])
+    n_Aa_control_exp <- (sum(M[,2])/ncol(data))*sum(M[2,])
+    n_AA_control_exp <- (sum(M[,1])/ncol(data))*sum(M[2,])
+    
+    #build the matrix of the expected data
+    M_expected <- matrix(c(n_AA_cases_exp, n_AA_control_exp, n_Aa_cases_exp,
+                           n_Aa_control_exp, n_aa_cases_exp, n_aa_control_exp), nrow=2)
+    
+    
+    #calculate the chisquare
+    df_chisquare = 2 #default degree of freedom since we have a 3x3 table
+    X_2 = 0
+    for(i in 1:nrow(M)){
+      for(j in 1:ncol(M)){
+        if(M_expected[i,j]==0){ #skip one loop if frequencies of control AND cases are 0
+          df_chisquare = 1 #reduce the degrees of freedom because now we have a 2x2 table
+          next
+        }else{
+          X_2 = X_2 + ((M[i,j]-M_expected[i,j])^2)/M_expected[i,j]
+        }
+      }
+    }
+    X_values <- c(X_values, X_2)  
+    p_value = 1 - pchisq(X_2, df=df_chisquare)
+    p_values <- c(p_values, p_value)
+    row_matrix <- c(n_AA_control, n_Aa_control, n_aa_control, n_AA_cases,
+                    n_Aa_cases, n_aa_cases, p_value) #values for each chromosome
+    final_matrix <- rbind(final_matrix, row_matrix) #attach the values by row to the final_matrix
+    
+    
+  }
+  final_matrix <- final_matrix[-1, ] #eliminate the first row of NaN values
+  row.names(final_matrix) <- chromosomes #assign the names to the rows of the matrix
+  final_matrix <- final_matrix[order(final_matrix[,7], decreasing = FALSE),] #order the matrix rows using p_value (decreasing order)
+  
+  p_values_ordered <- final_matrix[, 7] #obtain a vector with ordered p_values
+  rank_p_values <- rank(p_values_ordered, ties.method = 'max') #rank the p_values and if 2 or more p_value are equal assign the highest rank 
+  for(val in 1:length(p_values_ordered)){
+    q_value = (p_values_ordered[val]*G)/rank_p_values[val]
+    q_values <- c(q_values, q_value)
+  }
+  final_matrix <- cbind(final_matrix, q_values)
+  
+  
+  colnames(final_matrix) <- c("AA_ctrl","Aa_ctrl","aa_ctrl","AA_case","Aa_case","aa_case","pval","qval")
+  return(final_matrix)
+}
