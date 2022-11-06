@@ -7,7 +7,7 @@ VARIANTanalysis <- function(filepath, indCTRL, MAFth=0.01, HWEalpha=0.01){
   X_values <- c()
   p_values <- c()
   q_values <- c()
-  G <- ncol(data) #number of tests
+  G <- nrow(data) #number of tests
   
   q_s <- qcalculation(controls) #recall the q_calculation function
   HWE_p_values <- HWEtest(controls) #recall HWEtest functions
