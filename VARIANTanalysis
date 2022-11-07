@@ -7,17 +7,17 @@ VARIANTanalysis <- function(filepath, indCTRL, MAFth=0.01, HWEalpha=0.01){
   X_values <- c()
   p_values <- c()
   q_values <- c()
-  G <- nrow(data) #number of tests
   
   q_s <- qcalculation(controls) #recall the q_calculation function
   HWE_p_values <- HWEtest(controls) #recall HWEtest functions
   
   for (i in(1:length(q_s))){ #here we iterate all over the chromosomes
     #eliminate chromosomes that doesn't respect specific treshold
-    if(q_s[i] < MAFth | HWE_p_values[i] < HWEalpha){
+    if(q_s[i]<MAFth | HWE_p_values[i]<HWEalpha){
       data <- data[-i, ]
     }
   }
+  G <- nrow(data) #number of tests
   for (j in 1:nrow(data)) {
     row_case <- data[j, -indCTRL]
     row_control <- data[j, indCTRL]
@@ -60,8 +60,8 @@ VARIANTanalysis <- function(filepath, indCTRL, MAFth=0.01, HWEalpha=0.01){
           next
         }else{
           X_2 = X_2 + ((M[i,j]-M_expected[i,j])^2)/M_expected[i,j]
-        }
       }
+     }
     }
     X_values <- c(X_values, X_2)  
     p_value = 1 - pchisq(X_2, df=df_chisquare)
