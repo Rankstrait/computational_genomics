@@ -1,0 +1,14 @@
+#set as working directory the folder where you saved "raw_trascr_count.txt" file.
+rawdat <- read.table("raw_trascr_count.txt")
+group <- factor(colnames(rawdat))
+
+design <- model.matrix(~0+group)
+
+y <- DGEList(counts = rawdat)
+y <- calcNormFactors(y)   
+SF<-y$samples
+
+#here the code starts producing error
+y <- estimateGLMCommonDisp(y,design, verbose=TRUE)
+y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
+y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
