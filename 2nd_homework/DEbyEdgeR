@@ -1,8 +1,13 @@
-#set as working directory the folder where you saved "raw_trascr_count.txt" file.
+library(edgeR)
 rawdat <- read.table("raw_trascr_count.txt")
-group <- factor(colnames(rawdat))
+target = as.data.frame(rep("Patients", dim(rawdat)[2]), row.names = colnames(rawdat))
+indCTRl <- grep('CTRL', colnames(rawdat))
+target[indCTRl, ] = 'Control'
+colnames(target) = 'groups'
 
-design <- model.matrix(~0+group)
+Group = factor(target$groups)
+
+design <- model.matrix(~0+Group)
 
 y <- DGEList(counts = rawdat)
 y <- calcNormFactors(y)   
@@ -12,3 +17,10 @@ SF<-y$samples
 y <- estimateGLMCommonDisp(y,design, verbose=TRUE)
 y <- estimateGLMTrendedDisp(y,design) #phi depends on mu
 y <- estimateGLMTagwiseDisp(y,design) #phi is gene specific
+fit <- glmFit(y,design)
+summary(fit)
+
+
+Confronti<-makeContrasts(Treatment=GroupPatients- GroupControl, levels=design)
+RES<-glmLRT(fit,contrast=Confronti[,"Treatment"])
+RES$table[1:10, ]
